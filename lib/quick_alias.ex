@@ -2,7 +2,8 @@ defmodule QuickAlias do
   defmacro __using__({_, _, atom_module}) do
     module = Module.concat(atom_module)
 
-    loaded_modules
+    loaded_modules()++loadable_modules()
+    |> Enum.uniq()
     |> get_children_of(module)
     |> Enum.map(&build_quoted_alias/1)
     |> build_quoted_block
@@ -27,11 +28,19 @@ defmodule QuickAlias do
   defp child_of?(parent_name, [parent_name | _]), do: true
   defp child_of?(_, _), do: false
 
-  defp loaded_modules do
-    :code.all_loaded
-    |> Enum.map(fn({name, _}) -> to_string(name) end)
+  def loaded_modules do
+    :code.all_loaded()
+    |> Enum.map(fn {name, _} -> to_string(name) end)
     |> Enum.filter(&is_elixir_module?/1)
-    |> Enum.map(&(String.to_atom(&1)))
+    |> Enum.map(&String.to_atom(&1))
+  end
+
+  def loadable_modules do
+    :code.get_path()
+    |> Enum.flat_map(fn p -> Path.wildcard("#{p}/*.beam") end)
+    |> Enum.map(fn f -> Path.basename(f, ".beam") end)
+    |> Enum.filter(&is_elixir_module?/1)
+    |> Enum.map(&String.to_atom(&1))
   end
 
   defp is_elixir_module?("Elixir." <> _), do: true
