@@ -2,7 +2,7 @@ defmodule QuickAlias do
   defmacro __using__({_, _, atom_module}) do
     module = Module.concat(atom_module)
 
-    loaded_modules()++loadable_modules()
+    loaded_modules() ++ loadable_modules()
     |> Enum.uniq()
     |> get_children_of(module)
     |> Enum.map(&build_quoted_alias/1)
